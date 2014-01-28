@@ -50,7 +50,7 @@ THE SOFTWARE.
     // in encapsulating function scope.
 
     function loadXML(source) {
-        var xhr = (window.ActiveXObject) ?
+        var xhr = (window.ActiveXObject || "ActiveXObject" in window) ?
                 new ActiveXObject("Msxml2.XMLHTTP.3.0") :
                 new XMLHttpRequest();
 
@@ -60,7 +60,7 @@ THE SOFTWARE.
     }
 
     function loadXSL(source) {
-        if (window.ActiveXObject) {
+        if (window.ActiveXObject || "ActiveXObject" in window) {
             var xsl = new ActiveXObject("MSXML2.FreeThreadedDOMDocument.6.0");
             xsl.async = false;
             xsl.load(source);
@@ -148,7 +148,7 @@ THE SOFTWARE.
             var xml = loadXML(xmlSource),
                 xsl = loadXSL(xslSource);
 
-            if (window.ActiveXObject) {
+            if (window.ActiveXObject || "ActiveXObject" in window) {
                 return getActiveXTransform(xml, xsl, parameters);
             }
             else {
@@ -170,7 +170,7 @@ THE SOFTWARE.
                 target = document.querySelector(target)
             }
 
-            if (window.ActiveXObject) {
+            if (window.ActiveXObject || "ActiveXObject" in window) {
                 target.innerHTML = transformed;
             }
             else {
