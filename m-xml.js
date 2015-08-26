@@ -197,7 +197,7 @@ THE SOFTWARE.
                 '][' + options.xslSourceAttribute + ']');
             
             // Automatically deal with appropriately marked up DOM elements.
-            for (j; j < elements.length; j++) {
+            for (j=0; j < elements.length; j++) {
                 elementParams = undefined;
                 element = elements[j];
 
