@@ -43,11 +43,16 @@ THE SOFTWARE.
         options = {
             xmlSourceAttribute: 'data-xml',
             xslSourceAttribute: 'data-xslt',
-            xslParamAttribute: 'data-xsl-params'
+            xslParamAttribute: 'data-xsl-params',
+            xmlStringParser: getXMLStringParser()
         };
 
     // Closure prevents access to supporting functions we need by placing them
     // in encapsulating function scope.
+
+    function isXML(candidate) {
+        return (candidate.indexOf('<?xml version="1.0"') >= 0);
+    }
 
     function loadXML(source) {
         var xhr = (window.ActiveXObject || "ActiveXObject" in window) ?
@@ -57,6 +62,39 @@ THE SOFTWARE.
         xhr.open("GET", source, false);
         xhr.send();
         return xhr.responseXML;
+    }
+    
+    function parseXMLString(xmlString) {
+        return options.xmlStringParser.parse(xmlString);
+    }
+    
+    function getXMLStringParser() {
+        var parse = function() {
+            console.error('[Magic XML] No XML string parser available.');
+        };
+              
+        if (window.DOMParser) {
+            parse = function(xmlString) {
+                var parser = new window.DOMParser();
+                return parser.parseFromString(xmlString, "text/xml");
+            }
+        }
+        else if (window.ActiveXObject || "ActiveXObject" in window) {
+            parse = function(xmlString) {
+                var dom = new ActiveXObject("Microsoft.XMLDOM");
+                dom.async = false;
+                dom.loadXML(xmlString);
+                return dom;
+            }
+        }
+        else {
+            console.warn("[Magic XML] No XML string parser available. String " + 
+                "parsing will fail if used.");
+        }
+
+        return {
+            parse: parse
+        }
     }
 
     function loadXSL(source) {
@@ -123,10 +161,11 @@ THE SOFTWARE.
     var x = {
 
         /// <summary>
-        /// Configures the script to use non-default names for attributes.
+        /// Configures the script to use non-default names for attributes,
+        /// and/or an alternative XML string parser.
         /// </summary>
         configure: function (xmlSourceAttribute, xslSourceAttribute,
-            xslParamAttribute) {
+            xslParamAttribute, xmlStringParser) {
 
             if (typeof xmlSourceAttribute === 'string')
                 options.xmlSourceAttribute = xmlSourceAttribute;
@@ -136,6 +175,9 @@ THE SOFTWARE.
 
             if (typeof xslParamAttribute === 'string')
                 options.xslParamAttribute = xslParamAttribute;
+                
+            if (typeof xmlStringParser === 'function')
+                options.xmlStringParser = xmlStringParser;
 
         },
         
@@ -145,8 +187,10 @@ THE SOFTWARE.
         /// compatability issues automatically.
         /// </summary>
         transform: function (xmlSource, xslSource, parameters) {
-            var xml = loadXML(xmlSource),
-                xsl = loadXSL(xslSource);
+            var xml = (isXML(xmlSource)) ? parseXMLString(xmlSource) 
+                    : loadXML(xmlSource),
+                xsl = (isXML(xslSource)) ? parseXMLString(xslSource) 
+                    : loadXSL(xslSource);
 
             if (window.ActiveXObject || "ActiveXObject" in window) {
                 return getActiveXTransform(xml, xsl, parameters);
@@ -217,7 +261,7 @@ THE SOFTWARE.
             if (elements.length === 0) {
                 // If no Magic XML marked up objects found, inform users in
                 // case of mis-configuration.
-                console.log('[Magic XML] No magic detected on page, is script loaded after all DOM elements?');
+                console.warn('[Magic XML] No magic detected on page, is script loaded after all DOM elements?');
             }
         }
     };
@@ -225,4 +269,4 @@ THE SOFTWARE.
     // Throw 'x' into global scope to allow use in other scripts.
     window.magicXML = x;
     
-}(window, document)
+}(window, document);
